@@ -1,0 +1,115 @@
+global:
+  edition: ce
+  hosts:
+    domain: local
+    externalIP: 10.132.40.4   # Din VM-IP (för referens)
+    gitlab:
+      name: gitlab.local
+    registry:
+      name: registry.local
+    minio:
+      name: minio.local
+
+  ingress:
+    class: traefik            # Traefik används istället för NGINX
+    configureCertmanager: false
+    tls:
+      enabled: false
+
+certmanager:
+  enabled: false
+
+nginx-ingress:
+  enabled: false              # Viktigt: inaktivera NGINX
+
+prometheus:
+  install: false
+
+gitlab:
+  webservice:
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - gitlab.local
+      tls:
+        enabled: false
+    service:
+      type: ClusterIP
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+
+  rails:
+    # Förkonfigurera GitLab Application Settings vid första boot
+    initialRootPassword:
+      secret: gitlab-gitlab-initial-root-password
+    extraEnv:
+      GITLAB_OMNIBUS_CONFIG: |
+        gitlab_rails['import_sources'] = ['github', 'bitbucket', 'bitbucket_server', 'fogbugz', 'git', 'gitlab_project', 'gitlab', 'manifest']
+        gitlab_rails['allow_local_requests_from_web_hooks_and_services'] = true
+        gitlab_rails['allow_local_requests_from_system_hooks'] = true
+        gitlab_rails['enforce_dns_rebinding_protection'] = true
+
+  sidekiq:
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 100m
+      limits:
+        memory: 2Gi
+        cpu: 500m
+
+  gitlab-shell:
+    service:
+      type: ClusterIP
+      ports:
+        ssh: 2222
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 300m
+
+  redis:
+    master:
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 300m
+
+  gitaly:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 300m
+
+  postgresql:
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 200m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+  kas:
+    enabled: false
+
+  geo:
+    enabled: false
+
+gitlab-runner:
+  install: false   # hanteras separat via eget Helm-chart

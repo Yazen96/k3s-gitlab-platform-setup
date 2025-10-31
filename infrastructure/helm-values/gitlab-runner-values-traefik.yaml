@@ -1,0 +1,45 @@
+# Host aliases so runner can reach GitLab, Registry & Minio inside K3s
+hostAliases:
+  - ip: "10.132.40.4"
+    hostnames:
+      - "gitlab.local"
+      - "registry.local"
+      - "minio.local"
+
+# GitLab URL (via Traefik ingress)
+gitlabUrl: "http://gitlab.local/"
+
+# Registration token from GitLab UI (Admin → CI/CD → Runners)
+runnerRegistrationToken: "4HY6hGvnoySXLWz35grLDpDrP8KY5XKr6S5Jom5GXT3FEImspNofWucjErc1q9WH"
+
+unregisterRunners: true
+
+rbac:
+  create: true
+  clusterWideAccess: true
+
+runners:
+  privileged: true
+  config: |
+    [[runners]]
+      name = "k8s-runner"
+      url = "http://gitlab.local/"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        namespace = "gitlab-runner"
+        image = "alpine:latest"
+        privileged = true
+        poll_timeout = 180
+        pull_policy = "if-not-present"
+
+executor: kubernetes
+namespace: gitlab-runner
+runUntagged: true
+
+securityContext:
+  privileged: true
+  allowPrivilegeEscalation: true
+
+serviceAccount:
+  create: true
+  name: gitlab-runner
